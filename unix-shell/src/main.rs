@@ -1,6 +1,6 @@
 mod parser;
 mod process;
-use std::io::{self, BufRead};
+use std::{env, io::{self, BufRead}};
 
 use crate::parser::Argv;
 
@@ -11,7 +11,20 @@ fn main() {
         let line = line.unwrap();
 
         if let Some(unit) = Argv::new(line) {
-            process::run(unit);
+            if unit.program == "exit" {
+                break;
+            } else if unit.program == "cd" {
+                match unit.args.first() {
+                    Some(path) => {
+                        if let Err(e) = env::set_current_dir(path) {
+                            eprintln!("cd: {e}");
+                        }
+                    }
+                    None => eprintln!("cd: missing path"),
+                }
+            } else {
+                process::run(unit);
+            }
         }
     }
 }
