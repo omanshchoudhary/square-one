@@ -1,20 +1,35 @@
 mod parser;
 mod process;
-use std::{env, io::{self, BufRead}};
+use std::{
+    env,
+    io::{self, BufRead},
+};
 
-use crate::parser::Argv;
+use nix::sys::signal::{signal, SigHandler, Signal};
+
+use crate::parser::parse_line;
 
 fn main() {
+    if let Err(e) = unsafe { signal(Signal::SIGINT, SigHandler::SigIgn) } {
+        eprintln!("signal: {e}");
+    }
+
     let stdin = io::stdin();
 
     for line in stdin.lock().lines() {
-        let line = line.unwrap();
-
-        if let Some(unit) = Argv::new(line) {
-            if unit.program == "exit" {
+        let line = match line {
+            Ok(line) => line,
+            Err(e) => {
+                eprintln!("read: {e}");
                 break;
-            } else if unit.program == "cd" {
-                match unit.args.first() {
+            }
+        };
+
+        if let Some(commands) = parse_line(&line) {
+            if commands.len() == 1 && commands[0].program == "exit" {
+                break;
+            } else if commands.len() == 1 && commands[0].program == "cd" {
+                match commands[0].args.first() {
                     Some(path) => {
                         if let Err(e) = env::set_current_dir(path) {
                             eprintln!("cd: {e}");
@@ -23,7 +38,7 @@ fn main() {
                     None => eprintln!("cd: missing path"),
                 }
             } else {
-                process::run(unit);
+                process::run(commands);
             }
         }
     }
