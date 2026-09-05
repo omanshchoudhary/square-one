@@ -3,7 +3,7 @@
 using namespace std;
 #include "../process.h"
 
-void prioritySched(vector<Process>& P){
+void preemptivePriority(vector<Process>& P){
     int current_time = 0 ;
     int completed = 0;
     int n = P.size();

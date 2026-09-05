@@ -10,7 +10,7 @@ int main() {
         case 2: useSJF(); break;
         case 3: useSRTF(); break;
         case 4: useRR(); break;
-        case 5: usePriority(); break;
+        case 5: usePreemptivePriority(); break;
     }
     return 0;
 }

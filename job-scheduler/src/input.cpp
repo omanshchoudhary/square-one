@@ -6,7 +6,7 @@ void fcfs(vector<Process> &P);
 void sjf(vector<Process> &P);
 void srtf(vector<Process> &P);
 void rr(vector<Process> &P, int quantum);
-void prioritySched(vector<Process> &P);
+void preemptivePriority(vector<Process> &P);
 
 static void printTable(vector<Process> &P) {
     for (auto &p : P) {
@@ -66,7 +66,7 @@ void useRR() {
     printTable(P);
 }
 
-void usePriority() {
+void usePreemptivePriority() {
     int n;
     cin >> n;
     vector<Process> P(n);
@@ -75,6 +75,6 @@ void usePriority() {
         P[i].rem = P[i].bt;
         P[i].ct = P[i].tat = P[i].wt = 0;
     }
-    prioritySched(P);
+    preemptivePriority(P);
     printTable(P);
 }
