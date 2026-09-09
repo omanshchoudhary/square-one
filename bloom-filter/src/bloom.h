@@ -73,10 +73,14 @@ public:
         return static_cast<double>(set) / static_cast<double>(m);
     }
     // theoretical with the help of formula
-    double predictedFpr() const {
+    double predictedFill() const {
         double exponent = -(static_cast<double>(k) * static_cast<double>(inserted))
                           / static_cast<double>(m);
-        return std::pow(1.0 - std::exp(exponent), static_cast<double>(k));
+        return 1.0 - std::exp(exponent);
+    }
+    // theoretical with the help of formula
+    double predictedFpr() const {
+        return std::pow(predictedFill(), static_cast<double>(k));
     }
 
 private:
