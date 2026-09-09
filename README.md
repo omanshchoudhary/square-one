@@ -1,11 +1,12 @@
 # square-one
 
-Small systems programs written from first principles. Two Rust crates in one Cargo workspace (edition 2024), plus a standalone C++ project.
+Systems and distributed systems, built from first principles. Two Rust crates in one Cargo workspace (edition 2024), plus two standalone C++ projects.
 
 ```text
-turing-machine/   deterministic single-tape Turing machine
-unix-shell/       Unix shell: fork, exec, redirects, pipes
-job-scheduler/    CPU scheduling algorithms (C++)
+turing-machine/      deterministic single-tape Turing machine
+unix-shell/          Unix shell: fork, exec, redirects, pipes
+job-scheduler/       CPU scheduling algorithms (C++)
+consistent-hashing/  hash ring with virtual nodes (C++)
 ```
 
 ```bash
@@ -13,6 +14,8 @@ cargo run -p turing-machine -- machine.json [input]
 cargo run -p unix-shell
 
 g++ -std=c++17 -o job-scheduler/js job-scheduler/src/*.cpp job-scheduler/src/schedulers/*.cpp
+
+cd consistent-hashing && make && ./ring
 ```
 
 ## turing-machine
@@ -84,3 +87,31 @@ $ printf '4\n4\n1 0 5\n2 1 3\n3 2 8\n4 3 6\n2\n' | ./job-scheduler/js
 ```
 
 `fcfs` and `rr` sort the process list, so their rows come out in arrival order; the other three preserve input order.
+
+## consistent-hashing
+
+Maps keys to nodes so that adding or removing a node moves only that node's share of keys, instead of remapping everything. `make && ./ring` builds and prints three reports over 100k keys.
+
+- **Hash** — FNV-1a, then a splitmix64 finalizer. FNV-1a alone has weak avalanche, so `node0#0`, `node0#1`, … land numerically adjacent and every virtual node clumps together. The finalizer is what makes the ring spread.
+- **Ring** — `map<uint64_t, string>` of hash point → node. Lookup is `lower_bound` on the key's hash, wrapping to the first point when the key hashes past the last one.
+- **Virtual nodes** — each node occupies `vnodes` points, placed by hashing `name$i`. Per-node rather than ring-wide, so a bigger node can simply take more points.
+
+Removing a node moves only its own keys — verified at 0 keys displaced from the untouched nodes.
+
+```console
+distribution, 10 nodes / 100000 keys
+  vnodes=  1  stddev= 7209.5 ( 72.1%)  min= 1149  max=23709
+  vnodes= 10  stddev= 3368.1 ( 33.7%)  min= 5739  max=18423
+  vnodes=100  stddev= 1227.2 ( 12.3%)  min= 8084  max=12748
+  vnodes=500  stddev=  422.6 (  4.2%)  min= 9187  max=10700
+```
+
+Load imbalance falls as `1/√vnodes`, which is why real systems settle near 100–200 rather than pushing higher.
+
+```console
+adding a 6th node to 5
+  consistent hashing   18062 / 100000  (18.1%)   theory 1/6 = 16.7%
+  hash(key) % N        83509 / 100000  (83.5%)
+```
+
+That gap is the whole point of the algorithm.
