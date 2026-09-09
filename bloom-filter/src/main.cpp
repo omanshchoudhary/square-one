@@ -58,11 +58,37 @@ static void runTests() {
     printf("\n");
 }
 
+static void fprValidation() {
+    size_t n = 100000;
+    vector<string> keys = makeKeys("key", n);
+    vector<string> absent = makeKeys("absent", 1000000);
+
+    printf("false positive rate, %zu keys inserted, %zu queried\n", n, absent.size());
+    printf("  %-8s %10s %3s   %9s %9s   %8s %8s\n",
+           "target", "bits", "k", "predicted", "measured", "fill", "theory");
+
+    for (double p : {0.1, 0.01, 0.001, 0.0001}) {
+        BloomFilter b(n, p);
+        for (const string& key : keys) b.insert(key);
+
+        size_t hits = 0;
+        for (const string& key : absent) if (b.contains(key)) hits++;
+
+        double measured = static_cast<double>(hits) / static_cast<double>(absent.size());
+
+        printf("  %-8g %10zu %3d   %8.4f%% %8.4f%%   %8.4f %8.4f\n",
+               p, b.bits(), b.hashes(), 100 * b.predictedFpr(), 100 * measured,
+               b.fillRatio(), b.predictedFill());
+    }
+    printf("\n");
+}
+
 int main() {
     runTests();
     if (failures > 0) {
         printf("%d test(s) failed\n", failures);
         return 1;
     }
+    fprValidation();
     return 0;
 }
