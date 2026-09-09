@@ -3,3 +3,4 @@
 *.pdb
 machines/
 consistent-hashing/ring
+bloom-filter/bloom
